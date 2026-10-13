@@ -69,6 +69,8 @@ ffplay -f s16le -ar 24000 -ac 1 breeze.pcm
   **accelerate 1.12.0**, **qwen-tts 0.1.1**. Remaining direct inference
   dependencies are explicitly pinned in `requirements*.txt` to the installed
   versions from that image; Dependabot can propose upgrades.
+- CPU checks inspect the wheel's compiled `sm_120` target (the earlier image
+  reports the same target list). This is not an on-device sm_121 validation.
 - The inherited Torch/Torchaudio combination is an intentional compatibility
   exception: Torchaudio metadata requires Torch 2.11.0, and no Torchaudio 2.13
   CUDA wheel was available when migrating. It is installed with `--no-deps`;
@@ -103,10 +105,11 @@ Saturday **02:00 UTC** builds are enabled. PRs build/test but never publish.
 Actions are pinned by commit SHA. OCI source/revision/license labels link the
 package to this repository.
 
-Published tags: `current`, `sha-<full git SHA>`, and per-architecture
-`sha-<full git SHA>-arm64` / `-amd64`. Scheduled rebuilds of the same commit may
-move SHA tags as base/indirect dependencies update; pin a manifest digest for
-strict immutable deployments. Dependabot checks Docker, Python, and Actions
+Published tags: `current`, `sha-<full git SHA>` (first successful build only),
+`sha-<full git SHA>-run-<run ID>-<attempt>`, and per-architecture run tags
+with `-arm64` / `-amd64` suffixes. Scheduled/manual rebuilds update `current`
+and create unique run tags without replacing the first SHA tag. Pin a manifest
+digest for strict immutable deployments. Dependabot checks Docker, Python, and Actions
 weekly; review upgrades carefully, especially the compatibility pins above.
 
 ```sh
@@ -120,6 +123,6 @@ must set package visibility to public; no CLI auth scopes need changing.
 
 ## License
 
-Container packaging: Apache-2.0 (`LICENSE`). Upstream code retains its Apache-2.0
+Container packaging: MIT (`LICENSE`). Upstream code retains its Apache-2.0
 license at `/opt/breeze-infer/LICENSE`. Dependencies retain their own licenses;
 model weights are external and subject to their model license.

@@ -55,12 +55,12 @@ jobs:
           context: .
           platforms: linux/${{ matrix.arch }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/unitvectory-labs/docker-breeze-tts:sha-${{ github.sha }}-${{ matrix.arch }}
+          tags: ghcr.io/unitvectory-labs/docker-breeze-tts:sha-${{ github.sha }}-run-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.arch }}
           labels: |
             org.opencontainers.image.source=https://github.com/UnitVectorY-Labs/docker-breeze-tts
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.title=Breeze-TTS-2 CUDA runtime
-            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.licenses=MIT
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=min,scope=${{ matrix.arch }}
   manifest:
@@ -81,8 +81,12 @@ jobs:
         env:
           IMAGE: ghcr.io/unitvectory-labs/docker-breeze-tts
           SHA: ${{ github.sha }}
+          RUN: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           docker buildx imagetools create \
-            -t "${IMAGE}:current" -t "${IMAGE}:sha-${SHA}" \
-            "${IMAGE}:sha-${SHA}-arm64" "${IMAGE}:sha-${SHA}-amd64"
+            -t "${IMAGE}:current" -t "${IMAGE}:sha-${SHA}-run-${RUN}" \
+            "${IMAGE}:sha-${SHA}-run-${RUN}-arm64" "${IMAGE}:sha-${SHA}-run-${RUN}-amd64"
+          if ! docker buildx imagetools inspect "${IMAGE}:sha-${SHA}" >/dev/null 2>&1; then
+            docker buildx imagetools create -t "${IMAGE}:sha-${SHA}" "${IMAGE}:sha-${SHA}-run-${RUN}"
+          fi
           docker buildx imagetools inspect "${IMAGE}:current"

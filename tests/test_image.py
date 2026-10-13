@@ -18,6 +18,8 @@ def test_runtime_imports():
 
 def test_cpu_audio_and_bfloat16():
     assert torch.version.cuda == "13.0"
+    # Inspect compiled targets without initializing CUDA or requiring a GPU.
+    assert "sm_120" in torch._C._cuda_getArchFlags().split()
     audio = torchaudio.functional.resample(torch.zeros(1, 240), 24000, 16000)
     assert audio.shape == (1, 160)
     assert (torch.ones(2, 2, dtype=torch.bfloat16) @ torch.ones(2, 2, dtype=torch.bfloat16)).shape == (2, 2)
