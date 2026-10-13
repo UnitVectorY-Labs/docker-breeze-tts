@@ -37,6 +37,19 @@ the desired `--name`; this repository does not modify deployment configs.
 The service has no built-in authentication; keep it private or use an
 authenticated reverse proxy.
 
+### Security caveat for preserved compatibility pins
+
+At migration time, Dependabot reports four high and two moderate advisories in
+the preserved Transformers/Accelerate versions. They concern model-loading,
+checkpoint paths, saving/training paths, and custom code. These pins are retained
+to avoid an unvalidated upstream/model dependency migration, **not** because
+they are free of vulnerabilities. Review the repository's Security/Dependabot
+alerts before deploying. Only mount trusted, verified checkpoints; never let
+API clients choose model paths or supply checkpoints. Consider adding
+`-e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1` at runtime to enforce local
+loading. Offline mode does not fix unsafe local checkpoint contents. Dependency
+updates need upstream compatibility and GPU synthesis validation.
+
 ## API
 
 `GET /health` returns 200 after initialization (503 if the handler is reached
