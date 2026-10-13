@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # PyTorch CUDA wheels provide runtime libraries; no CUDA toolkit/devel image.
-FROM ubuntu:24.04 AS builder
+FROM ubuntu:26.04 AS builder
 ARG BREEZE_REF=58ec70ce5fa4cc361bdebf77ec40d1365da00ab2
 ENV DEBIAN_FRONTEND=noninteractive PIP_NO_CACHE_DIR=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -19,7 +19,7 @@ RUN git init /opt/breeze-infer \
     && git -C /opt/breeze-infer checkout --detach FETCH_HEAD \
     && test "$(git -C /opt/breeze-infer rev-parse HEAD)" = "${BREEZE_REF}"
 
-FROM ubuntu:24.04 AS runtime
+FROM ubuntu:26.04 AS runtime
 ENV DEBIAN_FRONTEND=noninteractive \
     PATH="/opt/venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
