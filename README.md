@@ -3,7 +3,10 @@
 Purpose-built CUDA 13 / PyTorch image for the official Breeze-TTS-2 streaming
 server. Native Linux ARM64 (including NVIDIA GB10, compute capability 12.1)
 and AMD64 builds replace a roughly 39 GB SGLang-based image. No SGLang, vLLM,
-FlashAttention, CUDA compiler, or model weights are included.
+FlashAttention, CUDA compiler, model weights, shell, or package manager are included.
+The final runtime is **Google Distroless `cc-debian13:nonroot`**, with the
+Python 3.13 interpreter/standard library and required audio ELF dependencies
+copied from a matching `python:3.13-slim-trixie` build environment.
 
 ## Run
 
@@ -26,7 +29,10 @@ both directories. It is not necessary to mount a Hugging Face cache for this
 fully local checkpoint. Optional persistent cache:
 `-v /absolute/writable/cache:/home/tts/.cache` (owned by 1000:1000).
 
-Default command (unchanged upstream API):
+Default entrypoint is `/opt/venv/bin/python -m breeze_infer.api`; the default
+arguments are `/model --host 0.0.0.0 --port 7860` (unchanged upstream API).
+To override arguments, append them after the image name. There is no shell.
+The equivalent full command is:
 
 ```sh
 python -m breeze_infer.api /model --host 0.0.0.0 --port 7860
@@ -75,17 +81,19 @@ ffplay -f s16le -ar 24000 -ac 1 breeze.pcm
 - Unmodified upstream code pinned to
   `58ec70ce5fa4cc361bdebf77ec40d1365da00ab2` from
   [breezeblue-ai/breeze-tts](https://github.com/breezeblue-ai/breeze-tts).
-- Ubuntu 24.04 / Python 3.12, virtual environment at `/opt/venv`. PyTorch's
+- Debian 13 / Python 3.13, virtual environment at `/opt/venv`. PyTorch's
   official CUDA wheels supply runtime libraries, without a devel/toolkit image.
-- Preserves the actual installed versions inspected in the earlier GB10 image:
-  **torch 2.13.0+cu130**, **torchaudio 2.11.0+cu130**, **transformers 4.57.3**,
+- Reviewed Dependabot bumps update **torch to 2.14.1+cu130** and **NumPy to
+  2.5.2**; the earlier GPU-validated image used Torch 2.13.0 and NumPy 2.3.5.
+  Preserves **torchaudio 2.11.0+cu130**, **transformers 4.57.3**,
   **accelerate 1.12.0**, **qwen-tts 0.1.1**. Remaining direct inference
   dependencies are explicitly pinned in `requirements*.txt` to the installed
-  versions from that image; Dependabot can propose upgrades.
+  versions from that image except the reviewed NumPy bump; Dependabot can
+  propose further upgrades. Torch 2.14.1 is not GPU-validated here.
 - CPU checks inspect the wheel's compiled `sm_120` target (the earlier image
   reports the same target list). This is not an on-device sm_121 validation.
-- The inherited Torch/Torchaudio combination is an intentional compatibility
-  exception: no Torchaudio 2.13 CUDA wheel was available when migrating.
+- The different Torch/Torchaudio versions are an intentional compatibility
+  exception: no matching Torchaudio 2.14 CUDA wheel was available when migrating.
   The downloaded Torchaudio 2.11 CUDA wheel declares no Torch requirement in
   its metadata, so `pip check` passes despite the different version numbers.
   Torchaudio and Qwen are installed with `--no-deps`, with **all dependencies
@@ -95,9 +103,13 @@ ffplay -f s16le -ar 24000 -ac 1 breeze.pcm
   operator compatibility.
 - Uses upstream **bfloat16 / eager attention**; no model, attention, or upstream
   source changes. SGLang's conflicting `kernels` package is never installed.
-- Multi-stage build keeps Git, tests, development tooling, and upstream assets
-  out of the final image. A final-stage dependency forces CPU checks before
-  publication. Runtime still includes FFmpeg, SoX, and libsndfile for audio.
+- Multi-stage build keeps Git, tests, pip, shells, package managers, development
+  tooling, and upstream assets out of the final image. `assemble_runtime.py`
+  collects Python and transitive ELF dependencies for FFmpeg, SoX (including
+  format plugins), libsndfile, and libgomp; no Ubuntu/CUDA base is disguised as
+  Distroless. Exec-form tests run in the actual shell-free runtime and force
+  CPU checks before publication. The inherited Distroless user is overridden
+  to UID/GID 1000, with owned writable cache directories.
 
 ## Validation status
 
@@ -105,7 +117,8 @@ The earlier SGLang-based image passed GB10 GPU inference and produced non-silent
 24 kHz PCM through llama-swap. **The replacement image has not been GPU tested.**
 Every native architecture build runs runtime imports, CPU bfloat16 matrix
 multiplication, Torchaudio CPU resampling, dependency metadata checks, writable
-cache/nonroot checks, and selected upstream API/disconnect/attention/runtime
+cache/nonroot checks, audio binary execution, absence of shells/installers,
+and selected upstream API/disconnect/attention/runtime
 tests offline, without models. Successful publication establishes those CPU
 checks only. Run a real health + synthesis test on GB10 before replacing a
 production deployment; do not assume import tests establish sm_121 execution.
@@ -119,12 +132,16 @@ Saturday **02:00 UTC** builds are enabled. PRs build/test but never publish.
 Actions are pinned by commit SHA. OCI source/revision/license labels link the
 package to this repository.
 
-Published tags: `current`, `sha-<full git SHA>` (first successful build only),
+Published tags: `current`, `current-arm64`, `current-amd64`,
+`sha-<full git SHA>` (first successful build only),
 `sha-<full git SHA>-run-<run ID>-<attempt>`, and per-architecture run tags
 with `-arm64` / `-amd64` suffixes. Scheduled/manual rebuilds update `current`
 and create unique run tags without replacing the first SHA tag. Pin a manifest
 digest for strict immutable deployments. Dependabot checks Docker, Python, and Actions
 weekly; review upgrades carefully, especially the compatibility pins above.
+All five initial Dependabot PRs were reviewed: Torch/NumPy and the setup-uv /
+CodeQL Actions upgrades were incorporated; the Ubuntu 26.04 bump was superseded
+by the Debian 13 builder required for the requested Distroless runtime.
 
 ```sh
 docker build -t breeze-tts:local .

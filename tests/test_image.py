@@ -1,7 +1,9 @@
 """No weights, network, or GPU are needed for these runtime checks."""
 import importlib
 import os
-import subprocess
+import shutil
+from importlib import metadata
+from packaging.requirements import Requirement
 
 import numpy as np
 import torch
@@ -28,8 +30,22 @@ def test_cpu_audio_and_bfloat16():
 
 
 def test_dependency_metadata():
-    result = subprocess.run(["python", "-m", "pip", "check"], capture_output=True, text=True, check=False)
-    assert result.returncode == 0, result.stdout + result.stderr
+    for distribution in metadata.distributions():
+        for raw in distribution.requires or []:
+            requirement = Requirement(raw)
+            if requirement.marker and not requirement.marker.evaluate({'extra': ''}):
+                continue
+            assert metadata.version(requirement.name) in requirement.specifier, raw
+
+
+def test_distroless_and_audio_tools():
+    for command in ('sh', 'bash', 'apt', 'apt-get', 'pip', 'pip3'):
+        assert shutil.which(command) is None
+    import subprocess
+    for command in ('sox', 'ffmpeg', 'ffprobe'):
+        result = subprocess.run([command, '--version' if command == 'sox' else '-version'],
+                                capture_output=True, text=True, check=False)
+        assert result.returncode == 0, result.stderr
 
 
 def test_nonroot_writable_caches():

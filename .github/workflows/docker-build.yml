@@ -7,6 +7,7 @@ on:
       - .dockerignore
       - requirements*.txt
       - tests/**
+      - assemble_runtime.py
       - .github/workflows/docker-build.yml
   pull_request:
     paths:
@@ -14,6 +15,7 @@ on:
       - .dockerignore
       - requirements*.txt
       - tests/**
+      - assemble_runtime.py
       - .github/workflows/docker-build.yml
   schedule:
     - cron: '0 2 * * 6'
@@ -90,3 +92,5 @@ jobs:
             docker buildx imagetools create -t "${IMAGE}:sha-${SHA}" "${IMAGE}:sha-${SHA}-run-${RUN}"
           fi
           docker buildx imagetools inspect "${IMAGE}:current"
+          docker buildx imagetools create -t "${IMAGE}:current-arm64" "${IMAGE}:sha-${SHA}-run-${RUN}-arm64"
+          docker buildx imagetools create -t "${IMAGE}:current-amd64" "${IMAGE}:sha-${SHA}-run-${RUN}-amd64"
