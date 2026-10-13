@@ -1,0 +1,4 @@
+# Install with --no-deps: preserve the original image's torch/torchaudio pair.
+# No torchaudio 2.13 CUDA release exists. See README compatibility caveat.
+--index-url https://download.pytorch.org/whl/cu130
+torchaudio==2.11.0+cu130

@@ -1,0 +1,10 @@
+.upstream/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.pcm
+*.wav
+*.safetensors
+*.pt
+*.pth
