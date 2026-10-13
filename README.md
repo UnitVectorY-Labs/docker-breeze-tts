@@ -72,13 +72,14 @@ ffplay -f s16le -ar 24000 -ac 1 breeze.pcm
 - CPU checks inspect the wheel's compiled `sm_120` target (the earlier image
   reports the same target list). This is not an on-device sm_121 validation.
 - The inherited Torch/Torchaudio combination is an intentional compatibility
-  exception: Torchaudio metadata requires Torch 2.11.0, and no Torchaudio 2.13
-  CUDA wheel was available when migrating. It is installed with `--no-deps`;
-  Qwen is likewise installed without resolution, with **all its dependencies
-  declared explicitly**. `pip check` has exactly this one accepted mismatch;
-  tests fail on any additional mismatch. This is not a generally supported
-  upstream Torch/Torchaudio pairing. CPU import/resampling tests and previous
-  image inference are evidence, not proof of all native operator compatibility.
+  exception: no Torchaudio 2.13 CUDA wheel was available when migrating.
+  The downloaded Torchaudio 2.11 CUDA wheel declares no Torch requirement in
+  its metadata, so `pip check` passes despite the different version numbers.
+  Torchaudio and Qwen are installed with `--no-deps`, with **all dependencies
+  declared explicitly**. Every metadata inconsistency fails CI. This is not
+  a generally supported upstream Torch/Torchaudio pairing. CPU import/resampling
+  tests and previous image inference are evidence, not proof of all native
+  operator compatibility.
 - Uses upstream **bfloat16 / eager attention**; no model, attention, or upstream
   source changes. SGLang's conflicting `kernels` package is never installed.
 - Multi-stage build keeps Git, tests, development tooling, and upstream assets

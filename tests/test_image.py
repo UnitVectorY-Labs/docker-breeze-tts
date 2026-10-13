@@ -27,13 +27,9 @@ def test_cpu_audio_and_bfloat16():
     assert _pcm16(np.array([-1, 0, 1])) == b"\x01\x80\x00\x00\xff\x7f"
 
 
-def test_dependency_metadata_only_known_mismatch():
+def test_dependency_metadata():
     result = subprocess.run(["python", "-m", "pip", "check"], capture_output=True, text=True, check=False)
-    # Deliberate inherited exception; any additional broken dependency fails CI.
-    assert result.returncode == 1
-    assert result.stdout.strip() == (
-        "torchaudio 2.11.0+cu130 has requirement torch==2.11.0, but you have torch 2.13.0+cu130."
-    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_nonroot_writable_caches():

@@ -1,3 +1,2 @@
-# Install with --no-deps: all dependencies explicitly declared in other files;
-# resolving qwen's torchaudio dependency would downgrade the proven Torch build.
+# Install with --no-deps: all dependencies explicitly declared in other files.
 qwen-tts==0.1.1
