@@ -95,9 +95,14 @@ ffplay -f s16le -ar 24000 -ac 1 breeze.pcm
 - The different Torch/Torchaudio versions are an intentional compatibility
   exception: no matching Torchaudio 2.14 CUDA wheel was available when migrating.
   The downloaded Torchaudio 2.11 CUDA wheel declares no Torch requirement in
-  its metadata, so `pip check` passes despite the different version numbers.
+  its dependency metadata, so version differences do not break requirement checks.
   Torchaudio and Qwen are installed with `--no-deps`, with **all dependencies
-  declared explicitly**. Every metadata inconsistency fails CI. This is not
+  declared explicitly**. Every unsatisfied dependency requirement fails CI.
+  Python 3.13's bundled pip reports the ARM64 cuSPARSELt 0.8.1 wheel as
+  unsupported after successfully installing its ARM64 wheel (an internal wheel
+  platform-tag defect); CI validates requirements directly with packaging and
+  tests actual Torch imports/operators rather than suppressing dependency errors.
+  This is not
   a generally supported upstream Torch/Torchaudio pairing. CPU import/resampling
   tests and previous image inference are evidence, not proof of all native
   operator compatibility.

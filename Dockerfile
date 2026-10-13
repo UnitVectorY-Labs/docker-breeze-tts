@@ -12,7 +12,6 @@ RUN pip install -r /opt/requirements/requirements-torch.txt \
     && pip install -r /opt/requirements/requirements.txt \
     && pip install --no-deps -r /opt/requirements/requirements-audio.txt \
     && pip install --no-deps -r /opt/requirements/requirements-qwen.txt \
-    && pip check \
     && pip install --target /opt/test-deps -r /opt/requirements/requirements-test.txt
 RUN git init /opt/breeze-infer \
     && git -C /opt/breeze-infer remote add origin https://github.com/breezeblue-ai/breeze-tts.git \

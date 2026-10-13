@@ -11,7 +11,9 @@ root = Path('/opt/runtime-root')
 
 def copy_file(source):
     source = Path(source)
-    target = root / str(source).lstrip('/')
+    # Debian merged-/usr paths must not replace Distroless /lib symlinks.
+    canonical = source.parent.resolve() / source.name
+    target = root / str(canonical).lstrip('/')
     target.parent.mkdir(parents=True, exist_ok=True)
     # Materialize symlinks so no target outside the assembled tree is needed.
     shutil.copy2(source, target, follow_symlinks=True)
