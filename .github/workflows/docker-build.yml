@@ -8,6 +8,7 @@ on:
       - requirements*.txt
       - tests/**
       - assemble_runtime.py
+      - runtime_policy.py
       - .github/workflows/docker-build.yml
   pull_request:
     paths:
@@ -16,6 +17,7 @@ on:
       - requirements*.txt
       - tests/**
       - assemble_runtime.py
+      - runtime_policy.py
       - .github/workflows/docker-build.yml
   schedule:
     - cron: '0 2 * * 6'

@@ -30,12 +30,14 @@ ENV PATH="/opt/venv/bin:/usr/local/bin:/usr/bin" \
     HOME=/home/tts XDG_CACHE_HOME=/home/tts/.cache \
     HF_HOME=/home/tts/.cache/huggingface \
     NUMBA_CACHE_DIR=/home/tts/.cache/numba
+ENV TORCH_PYTHON_NATIVE_USER_GRAPH_ORDER_FN=runtime_policy.aten_cuda_only
 COPY --from=builder /opt/runtime-root/ /
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /opt/breeze-infer/breeze_infer /opt/breeze-infer/breeze_infer
 COPY --from=builder /opt/breeze-infer/models /opt/breeze-infer/models
 COPY --from=builder /opt/breeze-infer/configs /opt/breeze-infer/configs
 COPY --from=builder /opt/breeze-infer/LICENSE /opt/breeze-infer/LICENSE
+COPY runtime_policy.py /opt/breeze-infer/runtime_policy.py
 WORKDIR /opt/breeze-infer
 USER 1000:1000
 EXPOSE 7860

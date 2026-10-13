@@ -48,6 +48,18 @@ def test_distroless_and_audio_tools():
         assert result.returncode == 0, result.stderr
 
 
+def test_cuda_uses_precompiled_aten_not_python_native_jit():
+    from torch._native import registry
+    assert os.environ['TORCH_PYTHON_NATIVE_USER_GRAPH_ORDER_FN'] == 'runtime_policy.aten_cuda_only'
+    assert all(not nodes for (_, key), nodes in registry._graphs.items() if key == 'CUDA')
+
+
+def test_sox_transform_without_shell():
+    import sox
+    result = sox.Transformer().build_array(input_array=np.zeros(240, dtype=np.float32), sample_rate_in=24000)
+    assert result.shape == (240,)
+
+
 def test_nonroot_writable_caches():
     assert os.getuid() == 1000
     for key in ("HOME", "HF_HOME", "NUMBA_CACHE_DIR"):

@@ -108,6 +108,18 @@ ffplay -f s16le -ar 24000 -ac 1 breeze.pcm
   operator compatibility.
 - Uses upstream **bfloat16 / eager attention**; no model, attention, or upstream
   source changes. SGLang's conflicting `kernels` package is never installed.
+- The first Ubuntu replacement reached healthy startup but failed synthesis on
+  GB10: Torch's optional Python-native CUDA `bmm` override attempted Triton C
+  compilation despite eager attention. The Distroless image sets PyTorch's
+  documented `TORCH_PYTHON_NATIVE_USER_GRAPH_ORDER_FN` to
+  `runtime_policy.aten_cuda_only`, removing optional CUDA override nodes before
+  registration and retaining the original precompiled ATen CUDA kernels. This
+  avoids adding a C compiler, linker, headers, or shell. CPU CI asserts the CUDA
+  override graphs are empty; on-device synthesis still needs revalidation.
+- pysox 1.5.0's import-time `os.popen('sox -h')` is replaced with an equivalent
+  argv-based `subprocess.run` probe during assembly. This small, guarded
+  dependency-only patch avoids a shell; SoX transformations are tested in the
+  shell-free runtime. The Breeze upstream and model are unmodified.
 - Multi-stage build keeps Git, tests, pip, shells, package managers, development
   tooling, and upstream assets out of the final image. `assemble_runtime.py`
   collects Python and transitive ELF dependencies for FFmpeg, SoX (including

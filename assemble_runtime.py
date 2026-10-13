@@ -8,6 +8,16 @@ import subprocess
 
 root = Path('/opt/runtime-root')
 
+# pysox 1.5.0 calls os.popen('sox -h') just to probe the binary on import.
+# Replace this one probe with argv subprocess execution, retaining the complete
+# package/API without installing a shell or modifying the model upstream.
+sox_init = Path('/opt/venv/lib/python3.13/site-packages/sox/__init__.py')
+content = sox_init.read_text()
+assert "os.popen('sox -h')" in content, 'Review pysox probe patch after dependency update'
+content = content.replace('import os', 'import io\nimport subprocess')
+content = content.replace("os.popen('sox -h')", "io.StringIO(subprocess.run(['sox', '-h'], check=True, capture_output=True, text=True).stdout)")
+sox_init.write_text(content)
+
 
 def copy_file(source):
     source = Path(source)
