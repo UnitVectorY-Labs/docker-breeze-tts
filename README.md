@@ -69,6 +69,9 @@ It streams raw mono **24 kHz signed 16-bit little-endian PCM**, not WAV.
 Responses carry `X-Sample-Rate` and `X-Sample-Format` headers. Only one request
 runs at a time; concurrent requests receive 409.
 
+Reference cloning uses the upstream `ref_clone_tata` template, which has no
+negative prompt: use `cfg_scale=1` with paired reference audio/transcript.
+
 ```sh
 curl --fail -F 'text=Hello from Breeze.' \
   -F 'instruction=A clear English voice.' \
@@ -89,7 +92,8 @@ ffplay -f s16le -ar 24000 -ac 1 breeze.pcm
   **accelerate 1.12.0**, **qwen-tts 0.1.1**. Remaining direct inference
   dependencies are explicitly pinned in `requirements*.txt` to the installed
   versions from that image except the reviewed NumPy bump; Dependabot can
-  propose further upgrades. Torch 2.14.1 is not GPU-validated here.
+  propose further upgrades. This exact Torch 2.14.1 serving image passed the
+  GB10 GPU tests recorded below.
 - CPU checks inspect the wheel's compiled `sm_120` target (the earlier image
   reports the same target list). This is not an on-device sm_121 validation.
 - The different Torch/Torchaudio versions are an intentional compatibility
@@ -105,7 +109,8 @@ ffplay -f s16le -ar 24000 -ac 1 breeze.pcm
   This is not
   a generally supported upstream Torch/Torchaudio pairing. CPU import/resampling
   tests and previous image inference are evidence, not proof of all native
-  operator compatibility.
+  operator compatibility. The final image also passed zero-reference and
+  reference-audio synthesis on GB10; this is not a general ABI guarantee.
 - Uses upstream **bfloat16 / eager attention**; no model, attention, or upstream
   source changes. SGLang's conflicting `kernels` package is never installed.
 - The first Ubuntu replacement reached healthy startup but failed synthesis on
@@ -115,7 +120,7 @@ ffplay -f s16le -ar 24000 -ac 1 breeze.pcm
   `runtime_policy.aten_cuda_only`, removing optional CUDA override nodes before
   registration and retaining the original precompiled ATen CUDA kernels. This
   avoids adding a C compiler, linker, headers, or shell. CPU CI asserts the CUDA
-  override graphs are empty; on-device synthesis still needs revalidation.
+  override graphs are empty; the final on-device synthesis tests below passed.
 - pysox 1.5.0's import-time `os.popen('sox -h')` is replaced with an equivalent
   argv-based `subprocess.run` probe during assembly. This small, guarded
   dependency-only patch avoids a shell; SoX transformations are tested in the
@@ -130,15 +135,29 @@ ffplay -f s16le -ar 24000 -ac 1 breeze.pcm
 
 ## Validation status
 
-The earlier SGLang-based image passed GB10 GPU inference and produced non-silent
-24 kHz PCM through llama-swap. **The replacement image has not been GPU tested.**
+On **2026-10-13 UTC**, the final ARM64 image at manifest digest
+`sha256:cf8551ffe8cf1f332c7b595cb99823bb5eaa3857dcc7be9521417c28f341b412`
+(source `7445c60880b7c27bd4569509d556929826892203`,
+[build 38483384010](https://github.com/UnitVectorY-Labs/docker-breeze-tts/actions/runs/38483384010))
+passed isolated **NVIDIA GB10 GPU** tests with read-only external weights,
+fresh writable caches and Hugging Face offline mode:
+
+- Health and both speech modes: HTTP 200; valid, non-silent mono 24 kHz PCM.
+- Instruction synthesis: 3.52 seconds; reference cloning at CFG 1: 3.76 seconds.
+- Missing text: 422; zero CFG and unpaired references: 400.
+- Shutdown: exit 0, no OOM, container removal and physical memory recovery.
+
+On 2026-10-14 UTC this same image also passed llama-swap synthesis, invalid-input
+checks, sequential Breeze → Fish → Step switching, graceful exit 0, and host
+memory recovery. Container image IDs were checked against standalone results.
+AMD64 GPU execution and TTS/LLM co-loading are not established by these tests.
 Every native architecture build runs runtime imports, CPU bfloat16 matrix
 multiplication, Torchaudio CPU resampling, dependency metadata checks, writable
 cache/nonroot checks, audio binary execution, absence of shells/installers,
 and selected upstream API/disconnect/attention/runtime
 tests offline, without models. Successful publication establishes those CPU
-checks only. Run a real health + synthesis test on GB10 before replacing a
-production deployment; do not assume import tests establish sm_121 execution.
+checks only. Retest new image revisions before replacing a production
+deployment; do not assume import tests establish sm_121 execution.
 
 ## Builds and maintenance
 
