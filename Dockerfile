@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.13-slim-trixie AS builder
+FROM python:3.14-slim-trixie AS builder
 ARG BREEZE_REF=58ec70ce5fa4cc361bdebf77ec40d1365da00ab2
 ENV DEBIAN_FRONTEND=noninteractive PIP_NO_CACHE_DIR=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
