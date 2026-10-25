@@ -43,6 +43,46 @@ the desired `--name`; this repository does not modify deployment configs.
 The service has no built-in authentication; keep it private or use an
 authenticated reverse proxy.
 
+### Local OSV review (2026-10-25)
+
+Local OSV Scanner 2.7.0 scanning found critical advisories in transitive
+dependencies. `requirements.txt` now explicitly pins certifi 2026.10.23 and
+Pillow 12.3.0 to prevent resolution to older vulnerable releases. Fresh builds
+already selected these versions during this review; these pins guarantee that
+selection rather than establish a reduction in fresh-build findings.
+
+Scanning the combined Python 3.13 dependency resolution still reports **five
+critical Pillow advisories**, all fixed in Pillow 13.0.0:
+[GHSA-332p-7hrc-92wf](https://osv.dev/vulnerability/GHSA-332p-7hrc-92wf),
+[GHSA-5x8w-8jj5-q52h](https://osv.dev/vulnerability/GHSA-5x8w-8jj5-q52h),
+[GHSA-8g5g-8vmr-9782](https://osv.dev/vulnerability/GHSA-8g5g-8vmr-9782),
+[GHSA-v9pv-5gc8-w2m6](https://osv.dev/vulnerability/GHSA-v9pv-5gc8-w2m6), and
+[GHSA-w889-685w-c8fh](https://osv.dev/vulnerability/GHSA-w889-685w-c8fh).
+Gradio 6.17.3 requires `pillow<13.0`; the latest Gradio 6.30.0 has the same
+restriction. Upgrading Pillow to 13 would violate dependency metadata and the
+image's dependency checks. These findings remain open pending upstream support.
+
+The default source scan resolves each requirements file independently, including
+Qwen's dependencies even though Docker installs Qwen with `--no-deps`. It reports
+older AnyIO, Torch, Gradio, and other versions overridden by the image's explicit
+pins. OSV's resolver also cannot resolve the custom CUDA wheel versions. Use a
+combined resolution to distinguish those findings from the intended Python set:
+
+```sh
+mkdir -p /tmp/breeze-osv
+uv pip compile requirements-torch.txt requirements.txt requirements-audio.txt \
+  requirements-qwen.txt requirements-test.txt --python-version 3.13 \
+  --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match \
+  -o /tmp/breeze-osv/requirements.txt
+osv-scanner scan source /tmp/breeze-osv --no-resolve
+```
+
+Both AMD64 and ARM64 resolutions passed. A temporary Python 3.13 environment
+passed dependency metadata checks, certificate bundle loading, PNG/JPEG/TIFF
+round trips, Gradio image component construction, and a FastAPI HTTP smoke test.
+This review did not build or scan the container's Debian/native libraries or
+rerun GPU synthesis. No advisories are suppressed.
+
 ### Security caveat for preserved compatibility pins
 
 At migration time, Dependabot reports four high and two moderate advisories in
