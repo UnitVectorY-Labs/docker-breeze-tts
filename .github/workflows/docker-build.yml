@@ -59,6 +59,7 @@ jobs:
           context: .
           platforms: linux/${{ matrix.arch }}
           push: ${{ github.event_name != 'pull_request' }}
+          sbom: true
           tags: ghcr.io/unitvectory-labs/docker-breeze-tts:sha-${{ github.sha }}-run-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.arch }}
           labels: |
             org.opencontainers.image.source=https://github.com/UnitVectorY-Labs/docker-breeze-tts
