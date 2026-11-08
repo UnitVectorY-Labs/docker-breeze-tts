@@ -18,4 +18,4 @@ safetensors==0.8.0
 # Security pins for transitive HTTP/image dependencies.
 certifi==2026.10.23
 # Gradio requires Pillow <13; 13.0.0 security fixes remain upstream-blocked.
-pillow==12.3.0
+pillow==13.0.0
